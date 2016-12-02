@@ -1,0 +1,187 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "subscription_id": {"type": "string"},
+        "netResourceGroup_index": {"type": "string"},
+        "aseResourceGroup_index": {"type": "string"},
+        "appResourceGroup_index": {"type": "string"},
+        "location_name": {"type": "string"},
+        "location_code": { "type": "string"},
+        "opco_code": {"type": "string"},
+        "project_code": {"type": "string" },
+        "app_code": {"type": "string"},
+        "env_code": {"type": "string"},
+        "corridor_code": { "type": "string"},
+
+        "rev_number": {"type": "string"},
+        "dcs_code": {"type": "string"},
+        "client_billingCode": {"type": "string"},
+        "project_billingCode": {"type": "string"},
+        "start_time": {"type": "string"},
+        "stop_time": {"type": "string"},
+        "launch_time": {"type": "string"},
+        "time_to_live": {"type": "string"},
+
+        "nsg_01_index": {"type": "string" },
+        "vnet_01_index": { "type": "string"},
+        "vnet_01_range": {"type": "string"},
+        "subnet_01_index": {"type": "string"},
+        "subnet_01_range": {"type": "string"},
+        "gatewaySubnet_range": { "type": "string"},
+        "dns1_ip": {"type": "string"},
+        "dns2_ip": {"type": "string"},
+        
+        "ase_01_index": {"type": "string"},
+        "ase_01_DNS_Suffix": {"type": "string"},
+        "ase_01_publicIp_count": {"type": "int"},
+        "ase_01_frontEnd_count": {"type": "int"},
+        "ase_01_frontEnd_tier": {
+            "type": "string",
+            "allowedValues": ["Medium","Large","ExtraLarge"]
+        },
+        "ase_01_workerPoolOne_count": {"type": "int"},
+        "ase_01_workerPoolOne_tier": {
+            "type": "string",
+            "allowedValues": ["Small","Medium","Large","ExtraLarge"]
+        },
+        "ase_01_workerPoolTwo_count": {"type": "int"},
+        "ase_01_workerPoolTwo_tier": {
+            "type": "string",
+            "allowedValues": ["Small","Medium","Large","ExtraLarge"]
+        },
+        "ase_01_workerPoolThree_count": {"type": "int"},
+        "ase_01_workerPoolThree_tier": {
+            "type": "string",
+            "allowedValues": ["Small","Medium","Large","ExtraLarge"]
+        },
+
+        "webApp_01_index": { "type": "string" },
+        "servicePlan_01_index": { "type": "string" },
+        "servicePlan_01_sku": {"type": "string"},
+        "servicePlan_01_worker_size": {
+            "type": "string",
+            "allowedValues": ["0","1","2"]
+        },
+        "diagStorage_index": { "type": "string" },
+        "diagStorage_type": {
+            "type": "string",
+            "allowedValues": ["Standard_LRS","Standard_ZRS","Standard_GRS","Standard_RAGRS","Premium_LRS"]
+        },
+        "SQLsrv_01_index": { "type": "string" },
+        "SQLsrv_01_login": { "type": "string" },
+        "SQLsrv_01_password": { "type": "securestring" },
+        "SQLdb_01_index": { "type": "string" },
+        "SQLdb_01_collation": {"type": "string"},
+        "SQLdb_01_tier": {
+            "type": "string",
+            "allowedValues": ["Basic","Standard","Premium"]
+        },
+        "SQLdb_01_size": {
+            "type": "string",
+            "allowedValues": ["Basic","S0","S1","S2","P1","P2","P3"]
+        },
+        "SQLFirewallRule_01_name": { "type": "string" },
+        "SQLFirewallRule_01_publicIp": { "type": "string" },
+        "appInsightLocation_name": {"type": "string"},
+        "appInsight_01_disabled": { "type": "bool" },
+        "appInsight_01_index": { "type": "string" },
+        "appInsight_01_kind": {
+            "type": "string",
+            "allowedValues": ["web","java","other"]
+        }
+    },
+    "variables": {
+        "tag_project": "[parameters('opco_code')]",
+        "tag_app": "[parameters('app_code')]",
+        "tag_env": "[parameters('env_code')]",
+        "tag_billing": "[concat(parameters('client_billingCode'),':',parameters('project_billingCode'))]",
+        "tag_scheduling": "[concat(parameters('start_time'),':',parameters('stop_time'))]",
+        "tag_lifecycle": "[concat(parameters('launch_time'),':',parameters('time_to_live'))]",
+        "nsg_01_name": "[concat('z-' , parameters('opco_code') , '-tran-shrd-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('nsg_01_index'))]",
+        "vnet_01_name": "[concat('z-' , parameters('opco_code') , '-tran-shrd-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('vnet_01_index'))]",
+        "subnet_01_name": "[concat('z-' , parameters('opco_code') , '-tran-shrd-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('subnet_01_index'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('nsg_01_name')]",
+            "apiVersion": "2016-03-30",
+            "location": "[parameters('location_name')]",
+            "dependsOn": [],
+            "tags": {
+                "global:project": "tran",
+                "global:rev": "[parameters('rev_number')]",
+                "global:app": "shrd",
+                "global:env": "[variables('tag_env')]",
+                "global:dcs": "[parameters('dcs_code')]",
+                "global:billing": "[variables('tag_billing')]",
+                "global:lifecycle": "[variables('tag_lifecycle')]"
+            },
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "AllowInboundAllAzureMngmt",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "454-455",
+                            "sourceAddressPrefix": "Internet",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('vnet_01_name')]",
+            "apiVersion": "2016-03-30",
+            "location": "[parameters('location_name')]",
+            "dependsOn": ["[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg_01_name'))]"],
+            "tags": {
+                "global:project": "tran",
+                "global:rev": "[parameters('rev_number')]",
+                "global:app": "shrd",
+                "global:env": "[variables('tag_env')]",
+                "global:dcs": "[parameters('dcs_code')]",
+                "global:billing": "[variables('tag_billing')]",
+                "global:lifecycle": "[variables('tag_lifecycle')]"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vnet_01_range')]"
+                    ]
+                },
+                "dhcpOptions": {
+                    "dnsServers": [
+                        "[parameters('dns1_ip')]",
+                        "[parameters('dns2_ip')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnet_01_name')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('subnet_01_range')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg_01_name'))]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "GatewaySubnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('gatewaySubnet_range')]"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {}
+}

@@ -1,0 +1,318 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+    "parameters": {
+        "subscription_id": {"type": "string"},
+        "netResourceGroup_index": {"type": "string"},
+        "aseResourceGroup_index": {"type": "string"},
+        "appResourceGroup_index": {"type": "string"},
+        "location_name": {"type": "string"},
+        "location_code": { "type": "string"},
+        "opco_code": {"type": "string"},
+        "project_code": {"type": "string" },
+        "app_code": {"type": "string"},
+        "env_code": {"type": "string"},
+        "corridor_code": { "type": "string"},
+
+        "rev_number": {"type": "string"},
+        "dcs_code": {"type": "string"},
+        "client_billingCode": {"type": "string"},
+        "project_billingCode": {"type": "string"},
+        "start_time": {"type": "string"},
+        "stop_time": {"type": "string"},
+        "launch_time": {"type": "string"},
+        "time_to_live": {"type": "string"},
+        
+        "nsg_01_index": {"type": "string" },
+        "vnet_01_index": { "type": "string"},
+        "vnet_01_range": {"type": "string"},
+        "subnet_01_index": {"type": "string"},
+        "subnet_01_range": {"type": "string"},
+        "gatewaySubnet_range": { "type": "string"},
+        "dns1_ip": {"type": "string"},
+        "dns2_ip": {"type": "string"},
+        
+        "ase_01_index": {"type": "string"},
+        "ase_01_DNS_Suffix": {"type": "string"},
+        "ase_01_publicIp_count": {"type": "int"},
+        "ase_01_frontEnd_count": {"type": "int"},
+        "ase_01_frontEnd_tier": {
+            "type": "string",
+            "allowedValues": ["Medium","Large","ExtraLarge"]
+        },
+        "ase_01_workerPoolOne_count": {"type": "int"},
+        "ase_01_workerPoolOne_tier": {
+            "type": "string",
+            "allowedValues": ["Small","Medium","Large","ExtraLarge"]
+        },
+        "ase_01_workerPoolTwo_count": {"type": "int"},
+        "ase_01_workerPoolTwo_tier": {
+            "type": "string",
+            "allowedValues": ["Small","Medium","Large","ExtraLarge"]
+        },
+        "ase_01_workerPoolThree_count": {"type": "int"},
+        "ase_01_workerPoolThree_tier": {
+            "type": "string",
+            "allowedValues": ["Small","Medium","Large","ExtraLarge"]
+        },
+
+        "webApp_01_index": { "type": "string" },
+        "servicePlan_01_index": { "type": "string" },
+        "servicePlan_01_sku": {"type": "string"},
+        "servicePlan_01_worker_size": {
+            "type": "string",
+            "allowedValues": ["0","1","2"]
+        },
+        "diagStorage_index": { "type": "string" },
+        "diagStorage_type": {
+            "type": "string",
+            "allowedValues": ["Standard_LRS","Standard_ZRS","Standard_GRS","Standard_RAGRS","Premium_LRS"]
+        },
+        "SQLsrv_01_index": { "type": "string" },
+        "SQLsrv_01_login": { "type": "string" },
+        "SQLsrv_01_password": { "type": "securestring" },
+        "SQLdb_01_index": { "type": "string" },
+        "SQLdb_01_collation": {"type": "string"},
+        "SQLdb_01_tier": {
+            "type": "string",
+            "allowedValues": ["Basic","Standard","Premium"]
+        },
+        "SQLdb_01_size": {
+            "type": "string",
+            "allowedValues": ["Basic","S0","S1","S2","P1","P2","P3"]
+        },
+        "SQLFirewallRule_01_name": { "type": "string" },
+        "SQLFirewallRule_01_publicIp": { "type": "string" },
+        "appInsightLocation_name": {"type": "string"},
+        "appInsight_01_disabled": { "type": "bool" },
+        "appInsight_01_index": { "type": "string" },
+        "appInsight_01_kind": {
+            "type": "string",
+            "allowedValues": ["web","java","other"]
+        }
+    },
+    "variables": {
+          "tag_project": "[parameters('opco_code')]",
+          "tag_app": "[parameters('app_code')]",
+          "tag_env": "[parameters('env_code')]",
+          "tag_billing": "[concat(parameters('client_billingCode'),':',parameters('project_billingCode'))]",
+          "tag_scheduling": "[concat(parameters('start_time'),':',parameters('stop_time'))]",
+          "tag_lifecycle": "[concat(parameters('launch_time'),':',parameters('time_to_live'))]",
+          "ase_01_name": "[concat('z-' , parameters('opco_code') , '-tran-shrd-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('ase_01_index'))]",
+          "aseRsg_01_name": "[concat('z-' , parameters('opco_code') , '-tran-shrd-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('aseResourceGroup_index'))]",
+          "ase_01_id": "[resourceId(variables('aseRsg_01_name'), 'Microsoft.Web/hostingEnvironments', variables('ase_01_name'))]",
+          "servicePlan_01_name": "[concat('z-' , parameters('opco_code') , '-' , parameters('project_code') , '-' , parameters('app_code') , '-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('servicePlan_01_index'))]",
+          "webApp_01_name": "[concat('z-' , parameters('opco_code') , '-' , parameters('project_code') , '-' , parameters('app_code') , '-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('webApp_01_index'))]",
+          "appInsight_01_name": "[concat('z-' , parameters('opco_code') , '-' , parameters('project_code') , '-' , parameters('app_code') , '-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('appInsight_01_index'))]",
+          "diagStorage_name": "[concat('z' , parameters('opco_code') , parameters('project_code') , parameters('app_code') , parameters('env_code') , parameters('corridor_code') , parameters('location_code') , parameters('diagStorage_index'))]",
+          "SQLsrv_01_name": "[concat('z-' , parameters('opco_code') , '-' , parameters('project_code') , '-' , parameters('app_code') , '-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('SQLsrv_01_index'))]",
+          "SQLdb_01_name": "[concat('z-' , parameters('opco_code') , '-' , parameters('project_code') , '-' , parameters('app_code') , '-' , parameters('env_code') , '-' , parameters('corridor_code') , '-' , parameters('location_code') , '-' , parameters('SQLdb_01_index'))]"
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Sql/servers",
+        "name": "[variables('SQLsrv_01_name')]",
+        "apiVersion": "2014-04-01-preview",
+        "location": "[parameters('location_name')]",
+        "dependsOn": [],
+        "tags": {
+            "global:project": "[variables('tag_project')]",
+            "global:rev": "[parameters('rev_number')]",
+            "global:app": "[variables('tag_app')]",
+            "global:env": "[variables('tag_env')]",
+            "global:dcs": "[parameters('dcs_code')]",
+            "global:billing": "[variables('tag_billing')]",
+            "global:lifecycle": "[variables('tag_lifecycle')]"
+        },
+        "properties": {
+          "administratorLogin": "[parameters('SQLsrv_01_login')]",
+          "administratorLoginPassword": "[parameters('SQLsrv_01_password')]",
+          "version": "12.0"
+        },
+        "resources": [
+          {
+            "type": "databases",
+            "name": "[variables('SQLdb_01_name')]",
+            "location": "[parameters('location_name')]",
+            "apiVersion": "2014-04-01-preview",
+            "dependsOn": ["[variables('SQLsrv_01_name')]"],
+            "tags": {
+              "global:project": "[variables('tag_project')]",
+              "global:rev": "[parameters('rev_number')]",
+              "global:app": "[variables('tag_app')]",
+              "global:env": "[variables('tag_env')]",
+              "global:dcs": "[parameters('dcs_code')]",
+              "global:billing": "[variables('tag_billing')]",
+              "global:lifecycle": "[variables('tag_lifecycle')]"
+            },
+            "properties": {
+              "collation": "[parameters('SQLdb_01_collation')]",
+              "edition": "[parameters('SQLdb_01_tier')]",
+              "maxSizeBytes": "1073741824",
+              "requestedServiceObjectiveName": "[parameters('SQLdb_01_size')]"
+            }
+          },
+          {
+            "type": "firewallrules",
+            "name": "[parameters('SQLFirewallRule_01_name')]",
+            "location": "[parameters('location_name')]",
+            "apiVersion": "2014-04-01-preview",
+            "dependsOn": ["[concat('Microsoft.Sql/servers/', variables('SQLsrv_01_name'))]"],
+            "properties": {
+              "startIpAddress": "[parameters('SQLFirewallRule_01_publicIp')]",
+              "endIpAddress": "[parameters('SQLFirewallRule_01_publicIp')]"
+            }
+          }
+        ]
+      },
+      {
+        "type": "Microsoft.Web/serverfarms",
+        "name": "[variables('servicePlan_01_name')]",
+        "location": "[parameters('location_name')]",
+        "apiVersion": "2014-06-01",
+        "dependsOn": [],
+        "tags": {
+            "global:project": "[variables('tag_project')]",
+            "global:rev": "[parameters('rev_number')]",
+            "global:app": "[variables('tag_app')]",
+            "global:env": "[variables('tag_env')]",
+            "global:dcs": "[parameters('dcs_code')]",
+            "global:billing": "[variables('tag_billing')]",
+            "global:lifecycle": "[variables('tag_lifecycle')]"
+        },
+        "properties": {
+          "name": "[variables('servicePlan_01_name')]",
+          "sku": "[parameters('servicePlan_01_sku')]",
+          "workerSize": "[parameters('servicePlan_01_worker_size')]",
+          "numberOfWorkers": 1,
+          "hostingEnvironment": "[variables('ase_01_name')]",
+          "hostingEnvironmentId": "[variables('ase_01_id')]"
+        }
+      },
+      {
+        "type": "Microsoft.Web/sites",
+        "name": "[variables('webApp_01_name')]",
+        "location": "[parameters('location_name')]",
+        "apiVersion": "2015-08-01",
+        "dependsOn": [
+          "[concat('Microsoft.Web/serverfarms/', variables('servicePlan_01_name'))]",
+          "[concat('Microsoft.Insights/components/', variables('appInsight_01_name'))]",
+          "[concat('Microsoft.Sql/servers/', variables('SQLsrv_01_name'))]"
+        ],
+        "tags": {
+            "global:project": "[variables('tag_project')]",
+            "global:rev": "[parameters('rev_number')]",
+            "global:app": "[variables('tag_app')]",
+            "global:env": "[variables('tag_env')]",
+            "global:dcs": "[parameters('dcs_code')]",
+            "global:billing": "[variables('tag_billing')]",
+            "global:scheduling": "[variables('tag_scheduling')]",
+            "global:lifecycle": "[variables('tag_lifecycle')]"
+        },
+        "properties": {
+          "name": "[variables('webApp_01_name')]",
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('servicePlan_01_name'))]",
+          "hostingEnvironment": "[variables('ase_01_name')]",
+          "hostingEnvironmentId": "[variables('ase_01_id')]",
+          "siteConfig": {
+            "AlwaysOn": true,
+            "use32BitWorkerProcess": false,
+            "phpVersion": "",
+            "pythonVersion": "",
+            "javaVersion": null,
+            "app_codeSettings": [
+              {
+                "name": "app_codeInsights:instrumentationKey",
+                "value": "[reference(concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Insights/components/', variables('appInsight_01_name'))).InstrumentationKey]"
+              },
+              {
+                "name": "app_codeInsights:disabled",
+                "value": "[parameters('appInsight_01_disabled')]"
+              }
+            ]
+          }
+        },
+        "resources": [
+          {
+            "type": "config",
+            "name": "connectionstrings",
+            "apiVersion": "2015-08-01",
+            "dependsOn": ["[concat('Microsoft.Web/Sites/', variables('webApp_01_name'))]"],
+            "properties": {
+              "app_codeContext": {
+                "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', variables('SQLsrv_01_name'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', variables('SQLdb_01_name'), ';User Id=', parameters('SQLsrv_01_login'), '@', variables('SQLsrv_01_name'), ';Password=', parameters('SQLsrv_01_password'), ';')]",
+                "type": "SQLAzure"
+              }
+            }
+          },
+          {
+            "type": "config",
+            "name": "logs",
+            "apiVersion": "2015-08-01",
+            "dependsOn": [
+              "[concat('Microsoft.Web/sites/', variables('webApp_01_name'))]",
+              "[concat('Microsoft.Storage/storageAccounts/', variables('diagStorage_name'))]"
+            ],
+            "properties": {
+              "app_codelicationLogs": {
+                "azureTableStorage": {
+                  "level": "Off",
+                  "sasUrl": null
+                },
+                "fileSystem": {
+                  "level": "Verbose"
+                }
+              },
+              "failedRequestsTracing": {
+                "enabled": true
+              },
+              "detailedErrorMessages": {
+                "enabled": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Microsoft.Insights/components",
+        "name": "[variables('appInsight_01_name')]",
+        "location": "[parameters('appInsightLocation_name')]",
+        "kind": "[parameters('appInsight_01_kind')]",
+        "apiVersion": "2014-04-01",
+        "dependsOn": [],
+        "tags": {
+            "global:project": "[variables('tag_project')]",
+            "global:rev": "[parameters('rev_number')]",
+            "global:app": "[variables('tag_app')]",
+            "global:env": "[variables('tag_env')]",
+            "global:dcs": "[parameters('dcs_code')]",
+            "global:billing": "[variables('tag_billing')]",
+            "global:lifecycle": "[variables('tag_lifecycle')]"
+        },
+        "resources": [],
+        "properties": {
+          "ApplicationId": "[variables('webApp_01_name')]"
+        }
+      },
+      {
+        "type": "Microsoft.Storage/storageAccounts",
+        "name": "[variables('diagStorage_name')]",
+        "location": "[parameters('location_name')]",
+        "apiVersion": "2015-06-15",
+        "dependsOn": [],
+        "tags": {
+            "global:project": "[variables('tag_project')]",
+            "global:rev": "[parameters('rev_number')]",
+            "global:app": "[variables('tag_app')]",
+            "global:env": "[variables('tag_env')]",
+            "global:dcs": "[parameters('dcs_code')]",
+            "global:billing": "[variables('tag_billing')]",
+            "global:lifecycle": "[variables('tag_lifecycle')]"
+        },
+        "properties": {
+          "accountType": "[parameters('diagStorage_type')]"
+        }
+      }
+    ],
+    "outputs": {}
+}
